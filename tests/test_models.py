@@ -222,4 +222,3 @@ class TestProductModel(unittest.TestCase):
             product_dict.pop("name")
             Product().deserialize(product_dict)
         product_dict = product.serialize()
-        
