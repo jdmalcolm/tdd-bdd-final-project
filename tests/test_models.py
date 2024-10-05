@@ -27,7 +27,7 @@ import os
 import logging
 import unittest
 from decimal import Decimal
-from service.models import Product, Category, db
+from service.models import Product, Category, db, DataValidationError
 from service import app
 from tests.factories import ProductFactory
 
@@ -128,7 +128,7 @@ class TestProductModel(unittest.TestCase):
         self.assertEqual(len(products), 1)
         self.assertEqual(products[0].id, original_id)
         self.assertEqual(products[0].description, "testing")
-    
+
     def test_delete_a_product(self):
         """It should Delete a Product"""
         product = ProductFactory()
@@ -184,3 +184,42 @@ class TestProductModel(unittest.TestCase):
         self.assertEqual(found.count(), count)
         for product in found:
             self.assertEqual(product.category, category)
+
+    def test_find_by_price(self):
+        """It should Find a Product by Price"""
+        products = ProductFactory.create_batch(10)
+        for product in products:
+            product.create()
+        price = products[0].price
+        count = len([p for p in products if p.price == price])
+        found = Product.find_by_price(price)
+        self.assertEqual(found.count(), count)
+        for product in found:
+            self.assertAlmostEqual(product.price, price)
+        found = Product.find_by_price(str(price))
+        self.assertEqual(found.count(), count)
+        for product in found:
+            self.assertAlmostEqual(product.price, price)
+
+    def test_update_error(self):
+        """It should throw Error on Update with no ID"""
+        product = ProductFactory()
+        product.id = None
+        with self.assertRaises(DataValidationError):
+            product.update()
+
+    def test_deserialize_error(self):
+        """It should throw Error on Deserialize with invalid attributes"""
+        product = ProductFactory()
+        product_dict = product.serialize()
+        # DataValidationError: non bool for "available"
+        with self.assertRaises(DataValidationError):
+            product_dict["available"] = "string"
+            Product().deserialize(product_dict)
+        product_dict = product.serialize()
+        # KeyError: pop key from dict
+        with self.assertRaises(DataValidationError):
+            product_dict.pop("name")
+            Product().deserialize(product_dict)
+        product_dict = product.serialize()
+        
