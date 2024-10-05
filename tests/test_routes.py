@@ -203,7 +203,6 @@ class TestProductRoutes(TestCase):
         products = self._create_products(5)
         product_count = self.get_product_count()
         test_product = products[0]
-        response = self.client.post(f"{BASE_URL}", json=test_product.serialize())
         response = self.client.delete(f"{BASE_URL}/{test_product.id}")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
         self.assertEqual(len(response.data), 0)
@@ -212,6 +211,15 @@ class TestProductRoutes(TestCase):
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         new_count = self.get_product_count()
         self.assertEqual(new_count, product_count - 1)
+    
+    def test_list_all_products(self):
+        """It should Get a list of Products"""
+        num_products = 5
+        self._create_products(num_products)
+        resp = self.client.get(BASE_URL)
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        data = resp.get_json()
+        self.assertEqual(len(data), num_products)
 
     ######################################################################
     # Utility functions
@@ -219,7 +227,7 @@ class TestProductRoutes(TestCase):
 
     def get_product_count(self):
         """save the current number of products"""
-        response = self.client.get(f"{BASE_URL}")
+        response = self.client.get(BASE_URL)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         data = response.get_json()
         # logging.debug("data = %s", data)
