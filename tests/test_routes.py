@@ -242,13 +242,25 @@ class TestProductRoutes(TestCase):
         category = products[0].category
         found = [p for p in products if p.category == category]
         found_count = len(found)
-        logging.debug(f"Found Products {found_count} {found}")
+        logging.debug("Found Products [%d] %s", found_count, found)
         resp = self.client.get(BASE_URL, query_string=f"category={category.name}")
         self.assertEqual(resp.status_code, status.HTTP_200_OK)
         data = resp.get_json()
         self.assertEqual(len(data), found_count)
         for product in data:
             self.assertEqual(product["category"], category.name)
+
+    def test_query_by_availability(self):
+        """It should Query Products by availability"""
+        products = self._create_products(10)
+        available_products = [p for p in products if p.available]
+        available_count = len(available_products)
+        resp = self.client.get(BASE_URL, query_string="available=true")
+        self.assertEqual(resp.status_code, status.HTTP_200_OK)
+        data = resp.get_json()
+        self.assertEqual(len(data), available_count)
+        for product in data:
+            self.assertTrue(product["available"])
 
     ######################################################################
     # Utility functions
